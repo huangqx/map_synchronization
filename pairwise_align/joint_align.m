@@ -1,49 +1,116 @@
-function [FFDs_opt] = joint_align(Shapes, SAMPLE, PAIRMATCH, Para_align)
+function [FFD] = joint_align(Shapes, SAMPLE, PAIRMATCH, Para_align)
 %
 numShapes = length(SAMPLE);
 numPairs = length(PAIRMATCH);
+
 for pairId = 1 : numPairs
     nc = size(PAIRMATCH{pairId}.corres, 2);
-    PAIRMATCH{pairId}.midPoints = zeros(3, nc);
+    PAIRMATCH{pairId}.weights = ones(1, nc);
 end
 
-SAMPLE_def = SAMPLE;
-for shapeId = 1 : numShapes
-    FFD{shapeId} = sp_ffd_init_sym(Shapes{shapeId}, Para_align.gridRes);
-    Coeff{shapeId} = sp_ffd_basis_coeff(FFD{shapeId}, SAMPLE{shapeId});
+numC_all = 0;
+for pairId = 1 : numPairs
+    numC = size(PAIRMATCH{pairId}.corres, 2);
+    numC_all = numC_all + numC;
 end
 
-for iter = 1:20
-    % Perform free-form deformation to obtain deformed positions
+for outIter = 1:10
+    % Perform recomputation
     for shapeId = 1 : numShapes
-        SAMPLE_def{shapeId} = FFD{shapeId}.ctrlPos_cur*Coeff{shapeId}';
+        weights{shapeId} = zeros(1, size(SAMPLE{shapeId}, 2));
     end
-    
-    % Compute the intermediate points
+
     for pairId = 1 : numPairs
+        nc = size(PAIRMATCH{pairId}.corres, 2);
+        PAIRMATCH{pairId}.midPoints = zeros(3, nc);
         sId = PAIRMATCH{pairId}.sId;
         tId = PAIRMATCH{pairId}.tId;
-        poss_s = SAMPLE{sId}(:, PAIRMATCH{pairId}.corres(1,:));
-        poss_t = SAMPLE{tId}(:, PAIRMATCH{pairId}.corres(2,:));
-        PAIRMATCH{pairId}.midPoints = (poss_s + poss_t)/2;
-    end
-    
-    % Perform the alignment
-    for shapeId = 1 : numShapes
-        TP{shapeId} = zeros(4, size(SAMPLE{shapeId}, 2));
-    end
-    for pairId = 1 : numPairs
-        sId = PAIRMATCH{pairId}.sId;
-        tId = PAIRMATCH{pairId}.tId;
-        buf = PAIRMATCH{pairId}.midPoints;
-        buf = [buf; ones(1, size(buf, 2))];
         ids1 = PAIRMATCH{pairId}.corres(1,:);
         ids2 = PAIRMATCH{pairId}.corres(2,:);
-        TP{sId}(:, ids1) = TP{sId}(:, ids1) + buf;
-        TP{tId}(:, ids2) = TP{tId}(:, ids2) + buf;
+        weights{sId}(ids1) = weights{sId}(ids1) + PAIRMATCH{pairId}.weights;
+        weights{tId}(ids2) = weights{tId}(ids2) + PAIRMATCH{pairId}.weights;
     end
+
+    SAMPLE_def = SAMPLE;
     for shapeId = 1 : numShapes
-        Target = TP{shapeId};
+        FFD{shapeId} = sp_ffd_init_sym(Shapes{shapeId}, Para_align.gridRes);
+        Term{shapeId}.b = sp_ffd_basis_coeff(FFD{shapeId}, SAMPLE{shapeId});
+        w = weights{shapeId};
+        W = sparse(1:length(w), 1:length(w), w);
+    %    A = Ds*W*Ds' + Para.lambda_first*eye(dimX) + Para.lambda_smooth*FFD.H_smooth;
+    %    b = Ds*W*Pt' + Para.lambda_first*FFD{shapeId}.ctrlPos_ori';
+        dimX = size(Term{shapeId}.b, 2);
+        Term{shapeId}.A = Term{shapeId}.b'*W*Term{shapeId}.b...
+            + Para_align.lambda_first*eye(dimX)...
+            + Para_align.lambda_smooth*FFD{shapeId}.H_smooth;
+        Term{shapeId}.b = Term{shapeId}.b';
+    end
+
+    for iter = 1:32
+        % Perform free-form deformation to obtain deformed positions
+        for shapeId = 1 : numShapes
+            SAMPLE_def{shapeId} = FFD{shapeId}.ctrlPos_cur*Term{shapeId}.b;
+        end
+    
+        % Compute the intermediate points
+        sqrDis = 0;
+        for pairId = 1 : numPairs
+            sId = PAIRMATCH{pairId}.sId;
+            tId = PAIRMATCH{pairId}.tId;
+            poss_s = SAMPLE_def{sId}(:, PAIRMATCH{pairId}.corres(1,:));
+            poss_t = SAMPLE_def{tId}(:, PAIRMATCH{pairId}.corres(2,:));
+            PAIRMATCH{pairId}.midPoints = (poss_s + poss_t)/2;
+            d = poss_s - poss_t;
+            sqrDis = sqrDis + sum(sum(d.*d).*PAIRMATCH{pairId}.weights);
+        end
+        fprintf('sqrDis = %f.\n', sqrDis);
+    
+        % Perform the alignment
+        for shapeId = 1 : numShapes
+            TP{shapeId} = zeros(3, size(SAMPLE{shapeId}, 2));
+        end
+        for pairId = 1 : numPairs
+            sId = PAIRMATCH{pairId}.sId;
+            tId = PAIRMATCH{pairId}.tId;
+            ids1 = PAIRMATCH{pairId}.corres(1,:);
+            ids2 = PAIRMATCH{pairId}.corres(2,:);
+            buf = PAIRMATCH{pairId}.midPoints.*(ones(3,1)*PAIRMATCH{pairId}.weights);
+            TP{sId}(:, ids1) = TP{sId}(:, ids1) + buf;
+            TP{tId}(:, ids2) = TP{tId}(:, ids2) + buf;
+        end
+        for shapeId = 1 : numShapes
+            b = Term{shapeId}.b*TP{shapeId}' +...
+                Para_align.lambda_first*FFD{shapeId}.ctrlPos_ori';
+            FFD{shapeId}.ctrlPos_cur = (Term{shapeId}.A\b)';
+        end
+    end
+    % Reweight the correspondences
+    for shapeId = 1 : numShapes
+        SAMPLE_def{shapeId} = FFD{shapeId}.ctrlPos_cur*Term{shapeId}.b;
+    end
+    %
+    sqrDisVec = zeros(1, numC_all);
+    off = 0;
+    for pairId = 1 : numPairs
+        sId = PAIRMATCH{pairId}.sId;
+        tId = PAIRMATCH{pairId}.tId;
+        poss_s = SAMPLE_def{sId}(:, PAIRMATCH{pairId}.corres(1,:));
+        poss_t = SAMPLE_def{tId}(:, PAIRMATCH{pairId}.corres(2,:));
+        d = poss_s - poss_t;
+        d = sum(d.*d);
+        nc = length(d);
+        sqrDisVec((off+1):(off+nc)) = d;
+        off = off + nc;
+    end
+    sigma = median(sqrDisVec);
+    for pairId = 1 : numPairs
+        sId = PAIRMATCH{pairId}.sId;
+        tId = PAIRMATCH{pairId}.tId;
+        poss_s = SAMPLE_def{sId}(:, PAIRMATCH{pairId}.corres(1,:));
+        poss_t = SAMPLE_def{tId}(:, PAIRMATCH{pairId}.corres(2,:));
+        d = poss_s - poss_t;
+        d = sum(d.*d);
+        PAIRMATCH{pairId}.weights = sqrt(sigma)./sqrt(sigma + d);
     end
 end
 
