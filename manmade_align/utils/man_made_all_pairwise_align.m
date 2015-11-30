@@ -11,16 +11,21 @@ rows = rows(ids)';
 cols = cols(ids)';
 
 % Perform sampling on the input shapes
-for id = 1 : length(Shapes)
+parfor id = 1 : length(Shapes)
     SAMPLE{id} = sp_mesh_sampling(Shapes{id}, Para_align.numSamples);
+    fprintf('Finished sampling %d.\n', id);
+end
+
+parfor id = 1 : length(Shapes)
     FFDs{id} = sp_ffd_init_sym(Shapes{id}, Para_align.gridRes);
     fprintf('Finished sampling %d.\n', id);
 end
 
+
 % Perform pair-wise alignment
-for pairId = 1 : length(rows)
+parfor pairId = 1 : length(rows)
     PAIRMATCH{pairId} = pairwise_matching(...
-        FFDs{pairId},...
+        FFDs{rows(pairId)},...
         SAMPLE{rows(pairId)},...
         SAMPLE{cols(pairId)},...
         rows(pairId),...

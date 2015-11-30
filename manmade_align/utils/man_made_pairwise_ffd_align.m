@@ -8,7 +8,7 @@ C_source_ori = sp_ffd_basis_coeff(sourceFFD, sourceSample);
 
 % Applies non-rigid 
 for iter = 1:Para.numIterations_pairwise
-    sourcePoints = FFD.ctrlPos_cur*C_source_ori';
+    sourcePoints = sourceFFD.ctrlPos_cur*C_source_ori';
     % Compute correspondences
     [Corres, medianDis] = sp_closest_point_corres(sourcePoints,...
         targetSample);
@@ -21,16 +21,16 @@ for iter = 1:Para.numIterations_pairwise
     Pt = targetSample(:, Corres(2,:));
     
     dimX = size(Ds, 1);
-    A = Ds*W*Ds' + Para.lambda_first*eye(dimX) + Para.lambda_smooth*FFD.H_smooth;
-    b = Ds*W*Pt' + Para.lambda_first*FFD.ctrlPos_ori';
+    A = Ds*W*Ds' + Para.lambda_first*eye(dimX)...
+        + Para.lambda_smooth*sourceFFD.H_smooth;
+    b = Ds*W*Pt' + Para.lambda_first*sourceFFD.ctrlPos_ori';
     sourceFFD.ctrlPos_cur = (A\b)';
 end
 %
 ffd_opt = sourceFFD;
 
-sourceShape_def = sourceShape;
-C_source_ori = sp_ffd_basis_coeff(FFD, sourceShape.vertexPoss);
-sourceShape_def.vertexPoss = FFD.ctrlPos_cur*C_source_ori';
+%C_source_ori = sp_ffd_basis_coeff(sourceFFD, sourceSample);
+%sourceSample_def = sourceFFD.ctrlPos_cur*C_source_ori';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute closest point pairs between three point clouds
