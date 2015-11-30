@@ -1,19 +1,27 @@
-function [G] = knn_graph(Shapes, knn)
+function [G] = man_made_knn_graph(Shapes, knn)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Build the k-nearest neighbor graph on the man-made shapes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Arguments:
+% Shapes: The input shapes, stored as triangular meshes
+% knn: the number of nearest neighbors per shape
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Compute shape descriptors
+% Initialize the grid of the box
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Box.dimX = 10;
 Box.dimY = 10;
 Box.dimZ = 10;
 Box.gridRes = 0.2;
 Box.lowerCorner = [-1,-1,-1]';
-
 dim = Box.dimX*Box.dimY*Box.dimZ;
 numShapes = length(Shapes);
 desscriptors = zeros(dim, numShapes);
 
+% Compute the descriptor for each shape in isolation
 for id = 1:numShapes
+    fprintf('  Computing descriptor for shape_%d\n', id);
+    % Scale the shape properly
     Shape = Shapes{id};
     boxDim = max(Shape.vertexPoss')' - min(Shape.vertexPoss')';
     scaleX = 2/boxDim(1);
@@ -22,10 +30,14 @@ for id = 1:numShapes
     Shape.vertexPoss(1,:) = Shape.vertexPoss(1,:)*scaleX;
     Shape.vertexPoss(2,:) = Shape.vertexPoss(2,:)*scaleY;
     Shape.vertexPoss(3,:) = Shape.vertexPoss(3,:)*scaleZ;
+    
+    % Compute the shape descriptor
     dess = lim_shape_descriptor(Shape, Box);
     desscriptors(:, id) = dess;
 end
 
+% Given the shape descriptors, compute the shape graph via nearest-neighbor
+% search
 dim = numShapes;
 Dis = zeros(dim, dim);
 for i = 1:dim
