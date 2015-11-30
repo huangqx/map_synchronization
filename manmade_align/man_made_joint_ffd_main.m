@@ -1,4 +1,4 @@
-function [FFDs] = man_made_align_main(Shapes, Para_align)
+function [Shapes_ffd] = man_made_joint_ffd_main(Shapes, Para_align)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Optimize a free-from deformation for each shape so that the input shapes
 % are aligned in a world coordinate system
@@ -16,4 +16,4 @@ fprintf('Performing all pair-wise matching...\n');
 
 % Perform joint-alignment
 fprintf('Performing joint alignment...\n');
-FFDs = man_made_joint_align(Shapes, SAMPLE, PAIRMATCH, Para_align);
+FFDs_opt = man_made_joint_align(Shapes, SAMPLE, PAIRMATCH, Para_align);

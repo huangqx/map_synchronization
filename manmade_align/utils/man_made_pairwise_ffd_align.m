@@ -1,41 +1,32 @@
 function [ffd_opt, medianDis] = man_made_pairwise_ffd_align(...
-    sourceShape, targetShape, Para)
+    sourceFFD, sourceSample, targetSample, Para)
 % Optimize a free-form deformation that aligns the source shape to the
 % target shape
 
-% Initialize the free-form deformation structure
-FFD = sp_ffd_init_sym(sourceShape, Para.gridRes);
-
-% Sample the source shape
-sourcePoints_ori = sp_mesh_sampling(sourceShape, Para.numSamples);
-
-% Sample the target shape
-targetPoints = sp_mesh_sampling(targetShape, Para.numSamples);
-
 % The FFD coefficient of the source points
-C_source_ori = sp_ffd_basis_coeff(FFD, sourcePoints_ori);
+C_source_ori = sp_ffd_basis_coeff(sourceFFD, sourceSample);
 
 % Applies non-rigid 
 for iter = 1:Para.numIterations_pairwise
     sourcePoints = FFD.ctrlPos_cur*C_source_ori';
     % Compute correspondences
     [Corres, medianDis] = sp_closest_point_corres(sourcePoints,...
-        targetPoints);
+        targetSample);
     
     % Deform the shape accordingly
     nC = size(Corres, 2);
     W = sparse(1:nC, 1:nC, Corres(3,:));
     
     Ds = C_source_ori(Corres(1,:),:)';
-    Pt = targetPoints(:, Corres(2,:));
+    Pt = targetSample(:, Corres(2,:));
     
     dimX = size(Ds, 1);
     A = Ds*W*Ds' + Para.lambda_first*eye(dimX) + Para.lambda_smooth*FFD.H_smooth;
     b = Ds*W*Pt' + Para.lambda_first*FFD.ctrlPos_ori';
-    FFD.ctrlPos_cur = (A\b)';
+    sourceFFD.ctrlPos_cur = (A\b)';
 end
 %
-ffd_opt = FFD;
+ffd_opt = sourceFFD;
 
 sourceShape_def = sourceShape;
 C_source_ori = sp_ffd_basis_coeff(FFD, sourceShape.vertexPoss);
