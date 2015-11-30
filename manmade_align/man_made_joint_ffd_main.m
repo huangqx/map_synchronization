@@ -1,4 +1,4 @@
-function [Shapes_ffd] = man_made_joint_ffd_main(Shapes, Para_align)
+function [FFDs_opt] = man_made_joint_ffd_main(Shapes, Para_align)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Optimize a free-from deformation for each shape so that the input shapes
 % are aligned in a world coordinate system
