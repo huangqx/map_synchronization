@@ -13,6 +13,32 @@ fprintf('Computing the knn shape graph...\n');
 % Compute a shape-graph that aligns all the shapes
 G_knn = man_made_knn_graph(Shapes, Para_align.knn);
 
-% Perform pair-wise affine matching between pairs of shapes
-[SAMPLE, PAIRMATCH] = man_made_all_pairwise_match(Shapes, G_knn, Para_align);
 
+% Perform sampling on the input shapes
+SAMPLE = cell(1, length(Shapes));
+for id = 1 : length(Shapes)
+    SAMPLE{id} = sp_mesh_sampling(Shapes{id}, Para_align.numSamples);
+    fprintf('Finished sampling %d.\n', id);
+end
+
+% Perform pair-wise affine matching between pairs of shapes
+[unaryTerm, binaryTerm, edges, numOfStates, rootId] =...
+    man_made_all_pairwise_matching(SAMPLE, G_knn, Para_align);
+
+% Perform map synchronization to jointly optimize the transformations
+% The current implementation uses the MRF formulation
+% default parameters for running the MRF
+paras = [400, 1e-9, 0.25];
+sol = trws(numOfStates, unaryTerm, edges(1,:)-1, edges(2,:)-1,...
+    binaryTerm, paras);
+sol = [sol(1:(rootId-1)), 1, sol(rootId:length(sol))];
+TP = sort(sol)
+
+Shapes_aff = Shapes;
+for id = 1 : length(Shapes)
+    theta = (sol(id)-1)*2*pi/4/Para_align.numRotSamples;
+    R = [cos(theta), 0, -sin(theta);
+        0, 1, 0;
+        sin(theta), 0, cos(theta)];
+    Shapes_aff{id}.vertexPoss = R*Shapes_aff{id}.vertexPoss;
+end
