@@ -45,6 +45,16 @@ load ('data\para_csm.mat');
 
 
 *****************************************************************
+*****************************************************************
+Folder “rotation_synchronization” implements the joint alignment method s described in
+
+"Exact and Stable Recovery of Rotations for Robust Synchronization." Lanhui Wand Amit Singer. Information and Inference: A Journal of the IMA, 2(2), pp. 145--193
+ 
+"Robust Rotation Synchronization via Non-Convex Optimization" Qixing Hunag. In preparation.
+
+Please refer to ‘rotation_synchronization/readme.txt’ for details
+
+*****************************************************************
 
 
 Currently, this repository is still being constantly updated. I will provide more implementations soon. 
