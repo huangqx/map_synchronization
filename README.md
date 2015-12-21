@@ -1,8 +1,8 @@
 This repository (will) provide implementations of several map synchronization algorithms that compute maps among a collection of shapes. The code is released under the MIT license and can be used for any purpose with proper attribution. The code accompanies the following paper, which should be cited in publications that use the provided modules:
 
 
-*****************************************************************
-Folder 'io' provides matlab codes for saving and loading shapes in wavefront obj format *****************************************************************
+*************************************************************************
+Folder 'io' provides matlab codes for saving and loading shapes in wavefront obj format
 
 *****************************************************************
 Folder “manmade_align” implements the joint alignment method described in
