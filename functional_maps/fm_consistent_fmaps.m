@@ -1,4 +1,4 @@
-function [fmaps] = consistent_fmaps(Data, Para)
+function [fmaps] = fm_consistent_fmaps(Data, Para)
 % Input arguments:
 %       Data.shapes:             the input shapes      
 %       Data.basis:              the precomputed basis
