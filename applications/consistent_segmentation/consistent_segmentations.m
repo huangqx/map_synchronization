@@ -11,3 +11,6 @@ function [Segs] = consistent_segmentations(Data, Para)
 function [Unary] = unary_potential(Shape, Basis, Para)
 % Encoding the image segmentation cues using a quadratic form
 
+function [Graph] = shape_graph_construction(Shapes)
+
+
