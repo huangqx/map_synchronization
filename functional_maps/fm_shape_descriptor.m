@@ -10,27 +10,26 @@ for i = 1:3
 end
 %
 cellCenters = zeros(3, gridDim*gridDim*gridDim);
-for i = 1:dim
-    for j = 1:dim
-        for k = 1:dim
-            cellId = (i-1)*dim*dim + (j-1)*dim + k;
-            cellCenters(1, cellId) = (i-0.5)/dim;
-            cellCenters(2, cellId) = (j-0.5)/dim;
-            cellCenters(3, cellId) = (k-0.5)/dim;
+for i = 1:gridDim
+    for j = 1:gridDim
+        for k = 1:gridDim
+            cellId = (i-1)*gridDim*gridDim + (j-1)*gridDim + k;
+            cellCenters(1, cellId) = (i-0.5)/gridDim;
+            cellCenters(2, cellId) = (j-0.5)/gridDim;
+            cellCenters(3, cellId) = (k-0.5)/gridDim;
         end
     end
 end
 % Perform uniform sampling of the shape
-numSamples = 32768;
+numSamples = 16384;
 points = fm_mesh_sampling(Shape, numSamples);
 %
-dim = gridDim*gridDim*gridDim;
-dess = zeros(dim, 1);
 %
-d = kron(cellCenters, ones(1, numSamples)) - kron(ones(1, dim), points);
+d = kron(cellCenters, ones(1, numSamples))...
+    - kron(ones(1, gridDim*gridDim*gridDim), points);
 d = sum(d.*d);
-d = reshape(d, [numSamples, dim]);
-dess = sqrt(min(d));
+d = reshape(d, [numSamples, gridDim*gridDim*gridDim]);
+dess = sqrt(min(d))';
 
 
 
