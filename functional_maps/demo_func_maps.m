@@ -22,7 +22,7 @@ if 1
 end
 if 1
     % compute consistent functional maps
-    Data.consistent_fmaps = fm_consistent_fmaps(Data, Para);
+    Data.consistent_fmaps = fm_consistent_fmaps2(Data, Para);
 end
-consistent_segmentations(Data, Para, Para.Camera);
+%consistent_segmentations(Data, Para, Para.Camera);
 Data_out = Data;
